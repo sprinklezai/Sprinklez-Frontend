@@ -1,0 +1,13 @@
+{
+  "name": "webapp",
+  "version": "0.1.0",
+  "description": "Web Application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
