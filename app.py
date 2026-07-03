@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -38,22 +40,33 @@ st.markdown(
 )
 
 
+def get_matching_column(df, *candidates):
+    if df.empty:
+        return None
+    normalized = {str(col).strip().lower(): col for col in df.columns}
+    for candidate in candidates:
+        if str(candidate).strip().lower() in normalized:
+            return normalized[str(candidate).strip().lower()]
+    return None
+
+
 @st.cache_data(show_spinner=False)
 def load_data():
+    base_dir = Path(__file__).resolve().parent
     file_map = {
-        "stores": "Store_Master.xlsx",
-        "brands": "Brand_Master.xlsx",
-        "companies": "Company_Master.xlsx",
-        "countries": "Country_Master.xlsx",
+        "stores": base_dir / "Store_Master.xlsx",
+        "brands": base_dir / "Brand_Master.xlsx",
+        "companies": base_dir / "Company_Master.xlsx",
+        "countries": base_dir / "Country_Master.xlsx",
     }
 
     dfs = {}
-    for key, filename in file_map.items():
+    for key, path in file_map.items():
         try:
-            dfs[key] = pd.read_excel(filename)
-            dfs[key].columns = [c.strip() for c in dfs[key].columns]
+            dfs[key] = pd.read_excel(path)
+            dfs[key].columns = [str(c).strip() for c in dfs[key].columns]
         except Exception as exc:
-            st.warning(f"Unable to load {filename}: {exc}")
+            st.warning(f"Unable to load {path.name}: {exc}")
             dfs[key] = pd.DataFrame()
 
     return dfs["stores"], dfs["brands"], dfs["companies"], dfs["countries"]
@@ -118,8 +131,9 @@ if page == "Global Overview":
 
     with chart_col1:
         st.subheader("🗺️ Stores by Country")
-        if "Country" in stores_df.columns:
-            country_counts = stores_df["Country"].value_counts().reset_index()
+        country_col = get_matching_column(stores_df, "Country", "country", "Country Name")
+        if country_col:
+            country_counts = stores_df[country_col].dropna().value_counts().reset_index()
             country_counts.columns = ["Country", "Count"]
         else:
             country_counts = pd.DataFrame(
@@ -145,8 +159,11 @@ if page == "Global Overview":
 
     with chart_col2:
         st.subheader("🍕 Contribution by Region & Brand")
-        if "Region" in stores_df.columns and "Sales" in stores_df.columns:
-            region_sales = stores_df.groupby("Region")["Sales"].sum().reset_index()
+        region_col = get_matching_column(stores_df, "Region", "region")
+        sales_col = get_matching_column(stores_df, "Sales", "sales", "Revenue", "revenue")
+        if region_col and sales_col:
+            region_sales = stores_df[[region_col, sales_col]].dropna().groupby(region_col)[sales_col].sum().reset_index()
+            region_sales.columns = ["Region", "Sales"]
         else:
             region_sales = pd.DataFrame(
                 {
