@@ -5,7 +5,8 @@ const fileMap = {
     brands: "Brand_Master.xlsx",
     companies: "Company_Master.xlsx",
     countries: "Country_Master.xlsx",
-    stores: "Store_Master.xlsx"
+    stores: "Store_Master.xlsx",
+    employee: "Employee_Master.xlsx"
 };
 
 function getData(type) {
