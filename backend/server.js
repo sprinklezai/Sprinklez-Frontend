@@ -16,6 +16,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "http://127.0.0.1:5173",
       "https://fandb-sprinklez-dashboard-live.onrender.com",
     ],
     credentials: true,

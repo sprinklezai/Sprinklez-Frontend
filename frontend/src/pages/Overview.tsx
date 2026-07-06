@@ -31,6 +31,16 @@ function Overview() {
   const greeting =
     hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
+  const getStatus = (store: any) => {
+    const statusKey = Object.keys(store).find(
+      (key) => key.trim().toLowerCase() === "status"
+    );
+
+    if (!statusKey) return "";
+
+    return String(store[statusKey]).trim().toLowerCase();
+  };
+
   useEffect(() => {
     async function loadOverviewData() {
       try {
@@ -43,13 +53,20 @@ function Overview() {
             getEmployees(),
           ]);
 
+        console.log("First store row:", stores[0]);
+        console.log("All store keys:", Object.keys(stores[0] || {}));
+        console.log(
+          "First 20 status values:",
+          stores.map((store: any) => getStatus(store)).slice(0, 20)
+        );
+
         const activeStores = stores.filter((store: any) => {
-          const status = String(store.status || "").trim().toLowerCase();
+          const status = getStatus(store);
           return status === "yes" || status === "active";
         }).length;
 
         const inactiveStores = stores.filter((store: any) => {
-          const status = String(store.status || "").trim().toLowerCase();
+          const status = getStatus(store);
           return status === "no" || status === "inactive";
         }).length;
 
