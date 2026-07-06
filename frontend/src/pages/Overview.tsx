@@ -31,23 +31,6 @@ function Overview() {
   const greeting =
     hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
-  const getStoreStatus = (store: any) =>
-    String(
-      store.Store_Status ||
-        store.store_status ||
-        store.Status ||
-        store.status ||
-        store.IsActive ||
-        store.is_active ||
-        store.Active ||
-        store.active ||
-        store["Store Status"] ||
-        store["Is Active"] ||
-        ""
-    )
-      .trim()
-      .toLowerCase();
-
   useEffect(() => {
     async function loadOverviewData() {
       try {
@@ -61,27 +44,13 @@ function Overview() {
           ]);
 
         const activeStores = stores.filter((store: any) => {
-          const status = getStoreStatus(store);
-
-          return (
-            status === "active" ||
-            status === "yes" ||
-            status === "y" ||
-            status === "1"
-          );
+          const status = String(store.status || "").trim().toLowerCase();
+          return status === "yes" || status === "active";
         }).length;
 
         const inactiveStores = stores.filter((store: any) => {
-          const status = getStoreStatus(store);
-
-          return (
-            status === "inactive" ||
-            status === "in-active" ||
-            status === "in active" ||
-            status === "no" ||
-            status === "n" ||
-            status === "0"
-          );
+          const status = String(store.status || "").trim().toLowerCase();
+          return status === "no" || status === "inactive";
         }).length;
 
         setKpis({
