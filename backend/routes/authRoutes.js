@@ -18,7 +18,7 @@ router.post("/login", (req, res) => {
     const employees = getData("employee");
 
     const user = users.find(
-      (u) => String(u.Emp_ID) === String(emp_id)
+      (u) => String(u.emp_id).trim() === String(emp_id).trim()
     );
 
     if (!user) {
@@ -28,14 +28,16 @@ router.post("/login", (req, res) => {
       });
     }
 
-    if (String(user.IsActive).toLowerCase() !== "active") {
+    const userStatus = String(user.is_active || "").trim().toLowerCase();
+
+    if (userStatus !== "active" && userStatus !== "yes") {
       return res.status(403).json({
         success: false,
         message: "User account is inactive",
       });
     }
 
-    if (String(user.Password) !== String(password)) {
+    if (String(user.password).trim() !== String(password).trim()) {
       return res.status(401).json({
         success: false,
         message: "Invalid Employee ID or Password",
@@ -43,7 +45,7 @@ router.post("/login", (req, res) => {
     }
 
     const employee = employees.find(
-      (e) => String(e.emp_code) === String(emp_id)
+      (e) => String(e.emp_code).trim() === String(emp_id).trim()
     );
 
     if (!employee) {
@@ -60,8 +62,8 @@ router.post("/login", (req, res) => {
         emp_id: employee.emp_code,
         emp_name: employee.emp_name,
         designation: employee.emp_designation,
-        role: user.Role,
-        status: user.IsActive,
+        role: user.role,
+        status: user.is_active,
       },
     });
   } catch (error) {
