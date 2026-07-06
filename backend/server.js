@@ -1,8 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 
+
 const authRoutes = require("./routes/authRoutes");
+const overviewRoutes = require("./routes/overviewRoutes");
 const dataRoutes = require("./routes/dataRoutes");
+
 
 const app = express();
 
@@ -36,6 +39,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api", authRoutes);
+app.use("/api", overviewRoutes);
 app.use("/api", dataRoutes);
 
 /*

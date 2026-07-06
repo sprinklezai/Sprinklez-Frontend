@@ -12,13 +12,7 @@ import {
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useAuth } from "../context/AuthContext";
 
-import {
-  getBrands,
-  getCompanies,
-  getCountries,
-  getStores,
-  getEmployees,
-} from "../services/dataService";
+import { getOverview } from "../api/overview";
 
 import KpiCard from "../components/widgets/KpiCard";
 import BrandCard from "../components/widgets/BrandCard";
@@ -38,10 +32,29 @@ function Overview() {
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [brands, setBrands] = useState<any[]>([]);
-  const [stores, setStores] = useState<any[]>([]);
+  const [overview, setOverview] = useState<any>(null);
 
-  const [kpis, setKpis] = useState({
+  const hour = new Date().getHours();
+
+  const greeting =
+    hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+
+  useEffect(() => {
+    async function loadOverview() {
+      try {
+        const data = await getOverview();
+        setOverview(data);
+      } catch (error) {
+        console.error("Overview loading failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOverview();
+  }, []);
+
+  const kpis = overview?.kpis || {
     stores: 0,
     brands: 0,
     companies: 0,
@@ -49,91 +62,10 @@ function Overview() {
     employees: 0,
     activeStores: 0,
     inactiveStores: 0,
-  });
-
-  const hour = new Date().getHours();
-
-  const greeting =
-    hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
-
-  const getBrandCode = (item: any) => {
-    return String(item.brand_code || "").trim().toUpperCase();
   };
 
-  const getBrandName = (item: any) => {
-    return String(item.brand_name || item.brand_desc || "Brand").trim();
-  };
-
-  const getCountry = (item: any) => {
-    return String(item.country_code || "").trim().toUpperCase();
-  };
-
-  const getStatus = (item: any) => {
-    return String(item.status || "").trim().toLowerCase();
-  };
-
-  useEffect(() => {
-    async function loadOverviewData() {
-      try {
-        const [brandData, companyData, countryData, storeData, employeeData] =
-          await Promise.all([
-            getBrands(),
-            getCompanies(),
-            getCountries(),
-            getStores(),
-            getEmployees(),
-          ]);
-
-        const activeStores = storeData.filter((store: any) => {
-          const status = getStatus(store);
-          return status === "yes" || status === "active";
-        }).length;
-
-        const inactiveStores = storeData.filter((store: any) => {
-          const status = getStatus(store);
-          return status === "no" || status === "inactive";
-        }).length;
-
-        setBrands(brandData);
-        setStores(storeData);
-
-        setKpis({
-          stores: storeData.length,
-          brands: brandData.length,
-          companies: companyData.length,
-          countries: countryData.length,
-          employees: employeeData.length,
-          activeStores,
-          inactiveStores,
-        });
-      } catch (error) {
-        console.error("Overview data loading failed:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadOverviewData();
-  }, []);
-
-  const brandCards = brands.map((brand) => {
-    const code = getBrandCode(brand);
-    const name = getBrandName(brand);
-
-    const brandStores = stores.filter((store) => getBrandCode(store) === code);
-
-    const countryCount = new Set(
-      brandStores.map((store) => getCountry(store)).filter(Boolean)
-    ).size;
-
-    return {
-      code,
-      name,
-      logo: brandLogoMap[code] || "",
-      stores: brandStores.length,
-      countries: countryCount,
-    };
-  });
+  const brandCards = overview?.brandSummary || [];
+  const topBrands = overview?.topBrandsByStores || [];
 
   const activePercent =
     kpis.stores > 0 ? Math.round((kpis.activeStores / kpis.stores) * 100) : 0;
@@ -252,12 +184,12 @@ function Overview() {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-              {brandCards.map((brand) => (
+              {brandCards.map((brand: any) => (
                 <BrandCard
-                  key={brand.code}
-                  name={brand.name}
-                  code={brand.code}
-                  logo={brand.logo}
+                  key={brand.brand_code}
+                  name={brand.brand_name}
+                  code={brand.brand_code}
+                  logo={brandLogoMap[brand.brand_code] || ""}
                   stores={brand.stores}
                   countries={brand.countries}
                 />
@@ -279,37 +211,34 @@ function Overview() {
               </h3>
 
               <div className="mt-5 space-y-4">
-                {[...brandCards]
-                  .sort((a, b) => b.stores - a.stores)
-                  .slice(0, 5)
-                  .map((brand) => (
-                    <div key={brand.code}>
-                      <div className="mb-1 flex justify-between text-sm">
-                        <span className="font-medium text-slate-700">
-                          {brand.name}
-                        </span>
-                        <span className="font-semibold text-slate-900">
-                          {brand.stores}
-                        </span>
-                      </div>
-
-                      <div className="h-2 rounded-full bg-slate-100">
-                        <div
-                          className="h-2 rounded-full bg-blue-600"
-                          style={{
-                            width: `${
-                              kpis.stores > 0
-                                ? Math.min(
-                                    100,
-                                    (brand.stores / kpis.stores) * 100
-                                  )
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
+                {topBrands.slice(0, 5).map((brand: any) => (
+                  <div key={brand.brand_code}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="font-medium text-slate-700">
+                        {brand.brand_name}
+                      </span>
+                      <span className="font-semibold text-slate-900">
+                        {brand.stores}
+                      </span>
                     </div>
-                  ))}
+
+                    <div className="h-2 rounded-full bg-slate-100">
+                      <div
+                        className="h-2 rounded-full bg-blue-600"
+                        style={{
+                          width: `${
+                            kpis.stores > 0
+                              ? Math.min(
+                                  100,
+                                  (brand.stores / kpis.stores) * 100
+                                )
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
