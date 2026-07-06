@@ -31,6 +31,23 @@ function Overview() {
   const greeting =
     hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
+  const getStoreStatus = (store: any) =>
+    String(
+      store.Store_Status ||
+        store.store_status ||
+        store.Status ||
+        store.status ||
+        store.IsActive ||
+        store.is_active ||
+        store.Active ||
+        store.active ||
+        store["Store Status"] ||
+        store["Is Active"] ||
+        ""
+    )
+      .trim()
+      .toLowerCase();
+
   useEffect(() => {
     async function loadOverviewData() {
       try {
@@ -44,24 +61,28 @@ function Overview() {
           ]);
 
         const activeStores = stores.filter((store: any) => {
-        const status = String(
-      store.Store_Status ||
-      store.store_status ||
-      store.Status ||
-      store.status ||
-      store.IsActive ||
-      store.is_active ||
-      store.Active ||
-      store.active ||
-      ""
-  )
-    .trim()
-    .toLowerCase();
+          const status = getStoreStatus(store);
 
-  return status === "active" || status === "yes" || status === "y" || status === "1";
-}).length;
+          return (
+            status === "active" ||
+            status === "yes" ||
+            status === "y" ||
+            status === "1"
+          );
+        }).length;
 
-        const inactiveStores = stores.length - activeStores;
+        const inactiveStores = stores.filter((store: any) => {
+          const status = getStoreStatus(store);
+
+          return (
+            status === "inactive" ||
+            status === "in-active" ||
+            status === "in active" ||
+            status === "no" ||
+            status === "n" ||
+            status === "0"
+          );
+        }).length;
 
         setKpis({
           stores: stores.length,
@@ -84,12 +105,12 @@ function Overview() {
 
   const cards = [
     { title: "Total Stores", value: kpis.stores },
+    { title: "Active Stores", value: kpis.activeStores },
+    { title: "Inactive Stores", value: kpis.inactiveStores },
     { title: "Total Brands", value: kpis.brands },
     { title: "Total Companies", value: kpis.companies },
     { title: "Total Countries", value: kpis.countries },
     { title: "Employees", value: kpis.employees },
-    { title: "Active Stores", value: kpis.activeStores },
-    { title: "Inactive Stores", value: kpis.inactiveStores },
   ];
 
   return (
