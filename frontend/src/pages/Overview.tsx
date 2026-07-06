@@ -43,17 +43,23 @@ function Overview() {
             getEmployees(),
           ]);
 
-        const activeStores = stores.filter((store: any) =>
-          String(
-            store.Store_Status ||
-              store.store_status ||
-              store.Status ||
-              store.status ||
-              ""
-          )
-            .toLowerCase()
-            .includes("active")
-        ).length;
+        const activeStores = stores.filter((store: any) => {
+        const status = String(
+      store.Store_Status ||
+      store.store_status ||
+      store.Status ||
+      store.status ||
+      store.IsActive ||
+      store.is_active ||
+      store.Active ||
+      store.active ||
+      ""
+  )
+    .trim()
+    .toLowerCase();
+
+  return status === "active" || status === "yes" || status === "y" || status === "1";
+}).length;
 
         const inactiveStores = stores.length - activeStores;
 
