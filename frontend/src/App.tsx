@@ -9,6 +9,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route path="/brand/:brandCode" element={<div>Brand Dashboard Coming Soon</div>} />
 
         <Route
           path="/overview"
