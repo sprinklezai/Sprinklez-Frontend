@@ -13,12 +13,14 @@ interface AuthContextType {
   loginUser: (user: User, rememberMe?: boolean) => void;
   logoutUser: () => void;
   isAuthenticated: boolean;
+  authLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     const savedUser =
@@ -28,6 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+
+    setAuthLoading(false);
   }, []);
 
   const loginUser = (userData: User, rememberMe = false) => {
@@ -50,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginUser,
         logoutUser,
         isAuthenticated: !!user,
+        authLoading,
       }}
     >
       {children}
