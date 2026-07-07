@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   Building2,
@@ -15,11 +15,14 @@ import { getBrandDashboard } from "../api/brand";
 
 function BrandDashboard() {
   const { brandCode } = useParams();
-
   const code = String(brandCode || "").toUpperCase();
 
   const [loading, setLoading] = useState(true);
   const [brandData, setBrandData] = useState<any>(null);
+
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedStore, setSelectedStore] = useState("");
 
   useEffect(() => {
     async function loadBrand() {
@@ -33,24 +36,117 @@ function BrandDashboard() {
       }
     }
 
-    if (code) {
-      loadBrand();
-    }
+    if (code) loadBrand();
   }, [code]);
 
   const brandName = brandData?.brand?.brand_name || code;
+  const allStores = brandData?.stores || [];
 
-  const kpis = brandData?.kpis || {
-    stores: 0,
-    countries: 0,
-    companies: 0,
-    activeStores: 0,
-    inactiveStores: 0,
+  const filteredStores = useMemo(() => {
+    return allStores.filter((store: any) => {
+      const countryMatch =
+        !selectedCountry ||
+        String(store.country_code).trim().toUpperCase() === selectedCountry;
+
+      const companyMatch =
+        !selectedCompany ||
+        String(store.company_code).trim() === selectedCompany;
+
+      const storeMatch =
+        !selectedStore || String(store.store_code).trim() === selectedStore;
+
+      return countryMatch && companyMatch && storeMatch;
+    });
+  }, [allStores, selectedCountry, selectedCompany, selectedStore]);
+
+  const activeStores = filteredStores.filter((store: any) => {
+    const status = String(store.status || "").trim().toLowerCase();
+    return status === "yes" || status === "active";
+  }).length;
+
+  const inactiveStores = filteredStores.filter((store: any) => {
+    const status = String(store.status || "").trim().toLowerCase();
+    return status === "no" || status === "inactive";
+  }).length;
+
+  const countryOptions = useMemo(() => {
+    const map = new Map<string, string>();
+
+    allStores.forEach((store: any) => {
+      const code = String(store.country_code || "").trim().toUpperCase();
+      if (code) map.set(code, code);
+    });
+
+    return Array.from(map.entries()).map(([value, label]) => ({
+      value,
+      label,
+    }));
+  }, [allStores]);
+
+  const companyOptions = useMemo(() => {
+    const map = new Map<string, string>();
+
+    allStores.forEach((store: any) => {
+      const code = String(store.company_code || "").trim();
+      if (code) map.set(code, code);
+    });
+
+    return Array.from(map.entries()).map(([value, label]) => ({
+      value,
+      label,
+    }));
+  }, [allStores]);
+
+  const storeOptions = useMemo(() => {
+    return filteredStores.map((store: any) => ({
+      value: String(store.store_code),
+      label: `${store.store_code} - ${store.store_name}`,
+    }));
+  }, [filteredStores]);
+
+  const countrySummary = useMemo(() => {
+    const map = new Map<string, number>();
+
+    filteredStores.forEach((store: any) => {
+      const country = String(store.country_code || "").trim().toUpperCase();
+      if (country) map.set(country, (map.get(country) || 0) + 1);
+    });
+
+    return Array.from(map.entries()).map(([country_code, stores]) => ({
+      country_code,
+      country_name: country_code,
+      stores,
+    }));
+  }, [filteredStores]);
+
+  const companySummary = useMemo(() => {
+    const map = new Map<string, number>();
+
+    filteredStores.forEach((store: any) => {
+      const company = String(store.company_code || "").trim();
+      if (company) map.set(company, (map.get(company) || 0) + 1);
+    });
+
+    return Array.from(map.entries()).map(([company_code, stores]) => ({
+      company_code,
+      company_name: company_code,
+      stores,
+    }));
+  }, [filteredStores]);
+
+  const kpis = {
+    stores: filteredStores.length,
+    countries: countrySummary.length,
+    companies: companySummary.length,
+    activeStores,
+    inactiveStores,
   };
 
-  const countrySummary = brandData?.countrySummary || [];
-  const companySummary = brandData?.companySummary || [];
-  const stores = brandData?.stores || [];
+  const handleReset = () => {
+    setSelectedCountry("");
+    setSelectedCompany("");
+    setSelectedStore("");
+  };
 
   return (
     <BrandLayout brandCode={code} brandName={brandName}>
@@ -69,19 +165,31 @@ function BrandDashboard() {
         </p>
       </section>
 
-      <FilterBar showBrand={false} />
-
       {loading ? (
         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-500 shadow-sm">
           Loading brand dashboard...
         </div>
       ) : (
         <>
+          <FilterBar
+            brandName={brandName}
+            countries={countryOptions}
+            companies={companyOptions}
+            stores={storeOptions}
+            selectedCountry={selectedCountry}
+            selectedCompany={selectedCompany}
+            selectedStore={selectedStore}
+            onCountryChange={setSelectedCountry}
+            onCompanyChange={setSelectedCompany}
+            onStoreChange={setSelectedStore}
+            onReset={handleReset}
+          />
+
           <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
             <KpiCard
               title="Total Stores"
               value={kpis.stores}
-              subtitle="Brand footprint"
+              subtitle="Filtered brand footprint"
               icon={<Store size={30} />}
               accent="blue"
             />
@@ -89,7 +197,7 @@ function BrandDashboard() {
             <KpiCard
               title="Countries"
               value={kpis.countries}
-              subtitle="Brand presence"
+              subtitle="Filtered presence"
               icon={<Globe2 size={30} />}
               accent="orange"
             />
@@ -97,7 +205,7 @@ function BrandDashboard() {
             <KpiCard
               title="Companies"
               value={kpis.companies}
-              subtitle="Legal entities"
+              subtitle="Filtered entities"
               icon={<Building2 size={30} />}
               accent="purple"
             />
@@ -127,8 +235,8 @@ function BrandDashboard() {
 
               <div className="mt-5 space-y-4">
                 {countrySummary
-                  .sort((a: any, b: any) => b.stores - a.stores)
-                  .map((country: any) => (
+                  .sort((a, b) => b.stores - a.stores)
+                  .map((country) => (
                     <div key={country.country_code}>
                       <div className="mb-1 flex justify-between text-sm">
                         <span className="font-medium text-slate-700">
@@ -166,8 +274,8 @@ function BrandDashboard() {
 
               <div className="mt-5 space-y-4">
                 {companySummary
-                  .sort((a: any, b: any) => b.stores - a.stores)
-                  .map((company: any) => (
+                  .sort((a, b) => b.stores - a.stores)
+                  .map((company) => (
                     <div key={company.company_code}>
                       <div className="mb-1 flex justify-between text-sm">
                         <span className="font-medium text-slate-700">
@@ -218,7 +326,7 @@ function BrandDashboard() {
                 </thead>
 
                 <tbody>
-                  {stores.map((store: any) => (
+                  {filteredStores.map((store: any) => (
                     <tr
                       key={store.store_code}
                       className="border-b border-slate-100 text-slate-700"
