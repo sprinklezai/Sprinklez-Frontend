@@ -81,6 +81,9 @@ function SalesDashboard() {
 
   const brandName = salesData?.brandName || salesData?.brandCode || code;
 
+  console.log("Sales Data:", salesData);
+  console.log("Filters:", salesData?.filters);
+
   const revenueTrend =
     salesData?.revenueTrend?.map((item: any) => ({
       name: item.date,
