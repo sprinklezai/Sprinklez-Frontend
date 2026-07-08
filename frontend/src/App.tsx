@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Overview from "./pages/Overview";
 import BrandDashboard from "./pages/BrandDashboard";
+import SalesDashboard from "./pages/SalesDashboard";
 
 import ProtectedRoute from "./router/ProtectedRoute";
 
@@ -28,7 +29,7 @@ function App() {
           path="/brand/:brandCode"
           element={
             <ProtectedRoute>
-              <BrandDashboard />
+            <SalesDashboard />
             </ProtectedRoute>
           }
         />

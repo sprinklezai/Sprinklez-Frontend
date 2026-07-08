@@ -15,8 +15,8 @@ import { getOverview } from "../api/overview";
 
 import KpiCard from "../components/widgets/KpiCard";
 import BrandCard from "../components/widgets/BrandCard";
-import PieChartCard from "../components/widgets/PieChartCard";
-import BarChartCard from "../components/widgets/BarChartCard";
+import PieChartCard from "../components/charts/PieChartCard";
+import BarChartCard from "../components/charts/BarChartCard";
 
 const brandLogoMap: Record<string, string> = {
   ALB: "/brand-logos/allo-beirut.png",
