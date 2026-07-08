@@ -1,3 +1,7 @@
+console.log("Sales Base URL:");
+console.log(SALES_BASE_URL);
+
+
 const AdmZip = require("adm-zip");
 const { parse } = require("csv-parse/sync");
 const { getData } = require("./excelService");
@@ -23,14 +27,45 @@ function parseDate(value) {
 async function downloadZip(month = "2026_06") {
   const url = `${SALES_BASE_URL}/${month}_sales.zip`;
 
-  const response = await fetch(url);
+  console.log("=================================");
+  console.log("Downloading Sales File");
+  console.log("URL:", url);
+  console.log("=================================");
 
-  if (!response.ok) {
-    throw new Error(`Failed to download sales file: ${url}`);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Sprinklez Dashboard",
+        "Accept": "*/*",
+      },
+    });
+
+    console.log("HTTP Status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(
+        `Download failed (${response.status}) : ${url}`
+      );
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+
+    console.log(
+      "Downloaded Size:",
+      arrayBuffer.byteLength.toLocaleString(),
+      "bytes"
+    );
+
+    return Buffer.from(arrayBuffer);
+
+  } catch (err) {
+
+    console.error("ZIP Download Error");
+    console.error(err);
+
+    throw err;
   }
-
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
 }
 
 function buildStoreLookup() {
