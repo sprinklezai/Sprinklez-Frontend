@@ -22,29 +22,7 @@ function SalesDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState<any>(null);
-
-  useEffect(() => {
-    async function loadSales() {
-      try {
-        const data = await getSalesDashboard(code, "2026_06");
-        setSalesData(data);
-      } catch (error) {
-        console.error("Sales dashboard loading failed:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (code) loadSales();
-  }, [code]);
-
-  const kpis = salesData?.kpis || {
-    netRevenue: 0,
-    orders: 0,
-    avgOrderValue: 0,
-    discounts: 0,
-    itemsSold: 0,
-  };
+  const [month, setMonth] = useState("2026_06");
 
   const formatMoney = (value: number) =>
     `د.ك ${Number(value || 0).toLocaleString(undefined, {
@@ -56,8 +34,33 @@ function SalesDashboard() {
       maximumFractionDigits: 0,
     });
 
-  const brandName =
-    salesData?.brandName || salesData?.brandCode || code;
+  const loadSales = async () => {
+    try {
+      setLoading(true);
+      const data = await getSalesDashboard(code, month);
+      setSalesData(data);
+    } catch (error) {
+      console.error("Sales dashboard loading failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (code) {
+      loadSales();
+    }
+  }, [code, month]);
+
+  const kpis = salesData?.kpis || {
+    netRevenue: 0,
+    orders: 0,
+    avgOrderValue: 0,
+    discounts: 0,
+    itemsSold: 0,
+  };
+
+  const brandName = salesData?.brandName || salesData?.brandCode || code;
 
   const revenueTrend =
     salesData?.revenueTrend?.map((item: any) => ({
@@ -85,19 +88,47 @@ function SalesDashboard() {
 
   return (
     <BrandLayout brandCode={code} brandName={brandName}>
-      <section className="mb-8 rounded-3xl border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-blue-100 p-8 shadow-sm">
-        <p className="mb-2 text-sm font-semibold text-blue-600">
-          Sales Dashboard
-        </p>
+      <section className="mb-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-900">
+              Business Overview
+            </h1>
+            <p className="text-sm text-slate-500">
+              {brandName} · All locations · All countries · Selected period
+            </p>
+          </div>
 
-        <h1 className="text-4xl font-extrabold text-slate-900">
-          {brandName} Sales Performance
-        </h1>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <select className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
+              <option>All Locations</option>
+            </select>
 
-        <p className="mt-3 max-w-3xl text-slate-500">
-          Live sales analytics from uploaded CSV files enriched with store,
-          brand, company and country master data.
-        </p>
+            <select className="rounded-xl border border-slate-300 px-4 py-3 text-sm">
+              <option>All Countries</option>
+            </select>
+
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            >
+              <option value="2026_06">Jun 2026</option>
+            </select>
+
+            <input
+              placeholder="Search products..."
+              className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
+            />
+
+            <button
+              onClick={loadSales}
+              className="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+            >
+              Refresh Data
+            </button>
+          </div>
+        </div>
       </section>
 
       {loading ? (
@@ -149,27 +180,15 @@ function SalesDashboard() {
           </section>
 
           <section className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
-            <LineChartCard
-              title="Revenue Trend"
-              data={revenueTrend}
-            />
+            <LineChartCard title="Revenue Trend" data={revenueTrend} />
 
-            <PieChartCard
-              title="Sales Type Mix"
-              data={salesTypeMix}
-            />
+            <PieChartCard title="Sales Type Mix" data={salesTypeMix} />
           </section>
 
           <section className="mt-8 grid gap-6 lg:grid-cols-2">
-            <BarChartCard
-              title="Revenue by Country"
-              data={countrySales}
-            />
+            <BarChartCard title="Revenue by Country" data={countrySales} />
 
-            <BarChartCard
-              title="Top Stores by Sales"
-              data={topStores}
-            />
+            <BarChartCard title="Top Stores by Sales" data={topStores} />
           </section>
 
           <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

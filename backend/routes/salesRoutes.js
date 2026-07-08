@@ -6,11 +6,16 @@ const { getSalesDashboard } = require("../services/salesService");
 router.get("/sales/:brandCode", async (req, res) => {
   try {
     const { brandCode } = req.params;
-    const { month } = req.query;
+    const { month, country, company, store, salesType, search } = req.query;
 
     const data = await getSalesDashboard({
       brandCode,
       month: month || "2026_06",
+      country: country || "",
+      company: company || "",
+      store: store || "",
+      salesType: salesType || "",
+      search: search || "",
     });
 
     res.json(data);

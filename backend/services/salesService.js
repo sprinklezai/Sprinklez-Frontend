@@ -6,8 +6,6 @@ const SALES_BASE_URL =
   process.env.SALES_BASE_URL ||
   "https://sprinkleztrading.com/sales-data/monthly";
 
-console.log("Sales Base URL:", SALES_BASE_URL);
-
 function normalize(value) {
   return String(value || "").trim().toUpperCase();
 }
@@ -25,39 +23,20 @@ function parseDate(value) {
 async function downloadZip(month = "2026_06") {
   const url = `${SALES_BASE_URL}/${month}_sales.zip`;
 
-  console.log("=================================");
-  console.log("Downloading Sales File");
-  console.log("URL:", url);
-  console.log("=================================");
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      Accept: "application/zip,*/*",
+    },
+  });
 
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Sprinklez Dashboard",
-        Accept: "*/*",
-      },
-    });
-
-    console.log("HTTP Status:", response.status);
-
-    if (!response.ok) {
-      throw new Error(`Download failed (${response.status}) : ${url}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-
-    console.log(
-      "Downloaded Size:",
-      arrayBuffer.byteLength.toLocaleString(),
-      "bytes"
-    );
-
-    return Buffer.from(arrayBuffer);
-  } catch (error) {
-    console.error("ZIP Download Error:", error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Download failed (${response.status}) : ${url}`);
   }
+
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
 
 function buildStoreLookup() {
@@ -117,8 +96,6 @@ function parseZipCsv(buffer) {
   entries.forEach((entry) => {
     if (!entry.entryName.toLowerCase().endsWith(".csv")) return;
 
-    console.log("Reading CSV from ZIP:", entry.entryName);
-
     const csvText = entry.getData().toString("utf8");
 
     const rows = parse(csvText, {
@@ -130,49 +107,62 @@ function parseZipCsv(buffer) {
       trim: true,
     });
 
-    console.log("CSV Rows Parsed:", rows.length);
-
     allRows = allRows.concat(rows);
   });
-
-  console.log("Total CSV Rows Parsed:", allRows.length);
 
   return allRows;
 }
 
-async function getSalesDashboard({ brandCode, month = "2026_06" }) {
+function sortDesc(data, key) {
+  return [...data].sort((a, b) => Number(b[key] || 0) - Number(a[key] || 0));
+}
+
+function sortAsc(data, key) {
+  return [...data].sort((a, b) => Number(a[key] || 0) - Number(b[key] || 0));
+}
+
+async function getSalesDashboard({
+  brandCode,
+  month = "2026_06",
+  country = "",
+  company = "",
+  store = "",
+  salesType = "",
+  search = "",
+}) {
   const zipBuffer = await downloadZip(month);
   const rawRows = parseZipCsv(zipBuffer);
   const storeLookup = buildStoreLookup();
 
-  const enrichedRows = rawRows
+  let enrichedRows = rawRows
     .map((row) => {
       const storeCode = String(row["Store No_"] || "").trim();
-      const store = storeLookup.get(storeCode);
+      const storeInfo = storeLookup.get(storeCode);
 
-      if (!store) return null;
+      if (!storeInfo) return null;
 
       const quantity = Math.abs(toNumber(row["Quantity"]));
       const netAmount = Math.abs(toNumber(row["Net Amount"]));
       const discount = Math.abs(toNumber(row["Discount Amount"]));
+      const receiptNo = String(row["Receipt No_"] || "").trim();
 
       return {
         date: parseDate(row["Date"]),
         store_code: storeCode,
-        store_name: store.store_name,
-        brand_code: store.brand_code,
-        brand_name: store.brand_name,
-        country_code: store.country_code,
-        country_name: store.country_name,
-        company_code: store.company_code,
-        company_name: store.company_name,
-        receipt_no: row["Receipt No_"],
+        store_name: storeInfo.store_name,
+        brand_code: storeInfo.brand_code,
+        brand_name: storeInfo.brand_name,
+        country_code: storeInfo.country_code,
+        country_name: storeInfo.country_name,
+        company_code: storeInfo.company_code,
+        company_name: storeInfo.company_name,
+        receipt_no: receiptNo,
         transaction_no: row["Transaction No_"],
         item_no: row["Item No_"],
         item_description: row["Item Description"],
         category_code: row["Item Category Code"],
         retail_product_code: row["Retail Product Code"],
-        sales_type: row["Sales Type"] || "UNKNOWN",
+        sales_type: normalize(row["Sales Type"] || "UNKNOWN"),
         quantity,
         net_amount: netAmount,
         discount,
@@ -182,14 +172,39 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
     .filter(Boolean)
     .filter((row) => normalize(row.brand_code) === normalize(brandCode));
 
-  console.log("Requested Brand:", brandCode);
-  console.log("Rows After Brand Filter:", enrichedRows.length);
+  const allBrandRows = enrichedRows;
 
-  const netRevenue = enrichedRows.reduce(
-    (sum, row) => sum + row.net_sales,
-    0
-  );
+  if (country) {
+    enrichedRows = enrichedRows.filter(
+      (row) => normalize(row.country_name) === normalize(country)
+    );
+  }
 
+  if (company) {
+    enrichedRows = enrichedRows.filter(
+      (row) => normalize(row.company_name) === normalize(company)
+    );
+  }
+
+  if (store) {
+    enrichedRows = enrichedRows.filter(
+      (row) => String(row.store_code) === String(store)
+    );
+  }
+
+  if (salesType) {
+    enrichedRows = enrichedRows.filter(
+      (row) => normalize(row.sales_type) === normalize(salesType)
+    );
+  }
+
+  if (search) {
+    enrichedRows = enrichedRows.filter((row) =>
+      normalize(row.item_description).includes(normalize(search))
+    );
+  }
+
+  const netRevenue = enrichedRows.reduce((sum, row) => sum + row.net_sales, 0);
   const discounts = enrichedRows.reduce((sum, row) => sum + row.discount, 0);
   const itemsSold = enrichedRows.reduce((sum, row) => sum + row.quantity, 0);
 
@@ -197,14 +212,16 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
   const orders = uniqueReceipts.size;
   const avgOrderValue = orders ? netRevenue / orders : 0;
 
+  const dateMap = new Map();
   const countryMap = new Map();
   const companyMap = new Map();
   const salesTypeMap = new Map();
   const storeMap = new Map();
   const itemMap = new Map();
-  const dateMap = new Map();
 
   enrichedRows.forEach((row) => {
+    dateMap.set(row.date, (dateMap.get(row.date) || 0) + row.net_sales);
+
     countryMap.set(
       row.country_name,
       (countryMap.get(row.country_name) || 0) + row.net_sales
@@ -220,8 +237,6 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
       (salesTypeMap.get(row.sales_type) || 0) + row.net_sales
     );
 
-    dateMap.set(row.date, (dateMap.get(row.date) || 0) + row.net_sales);
-
     if (!storeMap.has(row.store_code)) {
       storeMap.set(row.store_code, {
         store_code: row.store_code,
@@ -230,11 +245,13 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
         company_name: row.company_name,
         net_sales: 0,
         orders: new Set(),
+        quantity: 0,
       });
     }
 
     const storeData = storeMap.get(row.store_code);
     storeData.net_sales += row.net_sales;
+    storeData.quantity += row.quantity;
     storeData.orders.add(row.receipt_no);
 
     if (!itemMap.has(row.item_no)) {
@@ -251,50 +268,110 @@ async function getSalesDashboard({ brandCode, month = "2026_06" }) {
     itemData.net_sales += row.net_sales;
   });
 
-  const topStores = Array.from(storeMap.values())
-    .map((store) => ({
-      ...store,
-      orders: store.orders.size,
-      avg_order_value: store.orders.size
-        ? store.net_sales / store.orders.size
-        : 0,
-    }))
-    .sort((a, b) => b.net_sales - a.net_sales)
-    .slice(0, 10);
+  const storeRanking = Array.from(storeMap.values()).map((storeItem) => ({
+    store_code: storeItem.store_code,
+    store_name: storeItem.store_name,
+    country_name: storeItem.country_name,
+    company_name: storeItem.company_name,
+    net_sales: storeItem.net_sales,
+    orders: storeItem.orders.size,
+    quantity: storeItem.quantity,
+    avg_order_value: storeItem.orders.size
+      ? storeItem.net_sales / storeItem.orders.size
+      : 0,
+  }));
 
-  const topItems = Array.from(itemMap.values())
-    .sort((a, b) => b.net_sales - a.net_sales)
-    .slice(0, 10);
+  const itemRanking = Array.from(itemMap.values()).map((item) => ({
+    item_no: item.item_no,
+    item_description: item.item_description,
+    quantity: item.quantity,
+    net_sales: item.net_sales,
+  }));
+
+  const activeStoreCount = new Set(enrichedRows.map((row) => row.store_code))
+    .size;
+
+  const reportingDays = new Set(enrichedRows.map((row) => row.date)).size || 1;
+
+  const averageDailySales = netRevenue / reportingDays;
+  const averageDailySalesPerOutlet =
+    activeStoreCount > 0 ? averageDailySales / activeStoreCount : 0;
+
+  const countryOptions = Array.from(
+    new Set(allBrandRows.map((row) => row.country_name).filter(Boolean))
+  ).sort();
+
+  const companyOptions = Array.from(
+    new Set(allBrandRows.map((row) => row.company_name).filter(Boolean))
+  ).sort();
+
+  const storeOptions = Array.from(
+    new Map(
+      allBrandRows.map((row) => [
+        row.store_code,
+        {
+          store_code: row.store_code,
+          store_name: row.store_name,
+        },
+      ])
+    ).values()
+  ).sort((a, b) => String(a.store_name).localeCompare(String(b.store_name)));
+
+  const salesTypeOptions = Array.from(
+    new Set(allBrandRows.map((row) => row.sales_type).filter(Boolean))
+  ).sort();
 
   return {
     success: true,
     brandCode,
+    brandName: enrichedRows[0]?.brand_name || brandCode,
     month,
     kpis: {
       netRevenue,
       orders,
       avgOrderValue,
       discounts,
+      discountPercent: netRevenue ? (discounts / netRevenue) * 100 : 0,
       itemsSold,
+      activeStores: activeStoreCount,
+      averageDailySales,
+      averageDailySalesPerOutlet,
       rows: enrichedRows.length,
+    },
+    filters: {
+      countries: countryOptions,
+      companies: companyOptions,
+      stores: storeOptions,
+      salesTypes: salesTypeOptions,
     },
     revenueTrend: Array.from(dateMap.entries())
       .map(([date, value]) => ({ date, value }))
       .sort((a, b) => String(a.date).localeCompare(String(b.date))),
-    countrySales: Array.from(countryMap.entries()).map(([name, value]) => ({
-      name,
-      value,
-    })),
-    companySales: Array.from(companyMap.entries()).map(([name, value]) => ({
-      name,
-      value,
-    })),
-    salesTypeMix: Array.from(salesTypeMap.entries()).map(([name, value]) => ({
-      name,
-      value,
-    })),
-    topStores,
-    topItems,
+    countrySales: sortDesc(
+      Array.from(countryMap.entries()).map(([name, value]) => ({
+        name,
+        value,
+      })),
+      "value"
+    ),
+    companySales: sortDesc(
+      Array.from(companyMap.entries()).map(([name, value]) => ({
+        name,
+        value,
+      })),
+      "value"
+    ),
+    salesTypeMix: sortDesc(
+      Array.from(salesTypeMap.entries()).map(([name, value]) => ({
+        name,
+        value,
+      })),
+      "value"
+    ),
+    topStores: sortDesc(storeRanking, "net_sales").slice(0, 10),
+    bottomStores: sortAsc(storeRanking, "net_sales").slice(0, 10),
+    topItems: sortDesc(itemRanking, "net_sales").slice(0, 10),
+    bottomItems: sortAsc(itemRanking, "net_sales").slice(0, 10),
   };
 }
 
