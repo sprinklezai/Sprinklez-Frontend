@@ -124,10 +124,9 @@ function sortAsc(data, key) {
 async function getSalesDashboard({
   brandCode,
   month = "2026_06",
+  period = "MTD",
   country = "",
-  company = "",
   store = "",
-  salesType = "",
   search = "",
 }) {
   const zipBuffer = await downloadZip(month);
@@ -159,7 +158,12 @@ async function getSalesDashboard({
         receipt_no: receiptNo,
         transaction_no: row["Transaction No_"],
         item_no: row["Item No_"],
-        item_description: row["Item Description"],
+        item_description:
+  row["Item Description"] ||
+  row["Description"] ||
+  row["Item Description 2"] ||
+  row["Item No_"] ||
+  "Unknown Item",
         category_code: row["Item Category Code"],
         retail_product_code: row["Retail Product Code"],
         sales_type: normalize(row["Sales Type"] || "UNKNOWN"),
@@ -180,21 +184,9 @@ async function getSalesDashboard({
     );
   }
 
-  if (company) {
-    enrichedRows = enrichedRows.filter(
-      (row) => normalize(row.company_name) === normalize(company)
-    );
-  }
-
   if (store) {
     enrichedRows = enrichedRows.filter(
       (row) => String(row.store_code) === String(store)
-    );
-  }
-
-  if (salesType) {
-    enrichedRows = enrichedRows.filter(
-      (row) => normalize(row.sales_type) === normalize(salesType)
     );
   }
 
@@ -312,6 +304,7 @@ async function getSalesDashboard({
         {
           store_code: row.store_code,
           store_name: row.store_name,
+          country_name: row.country_name,
         },
       ])
     ).values()
@@ -343,6 +336,7 @@ async function getSalesDashboard({
       companies: companyOptions,
       stores: storeOptions,
       salesTypes: salesTypeOptions,
+      periods: ["WTD", "MTD", "YTD"],
     },
     revenueTrend: Array.from(dateMap.entries())
       .map(([date, value]) => ({ date, value }))

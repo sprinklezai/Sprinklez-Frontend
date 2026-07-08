@@ -4,10 +4,9 @@ export async function getSalesDashboard(
   brandCode: string,
   month = "2026_06",
   filters: {
+    period?: string;
     country?: string;
-    company?: string;
     store?: string;
-    salesType?: string;
     search?: string;
   } = {}
 ) {
