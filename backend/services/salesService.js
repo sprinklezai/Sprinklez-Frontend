@@ -1,12 +1,10 @@
-const { downloadSalesZipFromDrive } = require("./googleDriveSalesService");
 const AdmZip = require("adm-zip");
 const { parse } = require("csv-parse/sync");
 const { getData } = require("./excelService");
+const { downloadSalesZipFromDrive } = require("./googleDriveSalesService");
 
-
-const SALES_BASE_URL =
-  process.env.SALES_BASE_URL ||
-  "https://sprinkleztrading.com/sales-data/monthly";
+const salesCache = new Map();
+const CACHE_TTL_MS = 15 * 60 * 1000;
 
 function normalize(value) {
   return String(value || "").trim().toUpperCase();
@@ -17,6 +15,11 @@ function toNumber(value) {
   return Number.isNaN(num) ? 0 : num;
 }
 
+function parseDate(value) {
+  if (!value) return null;
+  return String(value).split(" ")[0];
+}
+
 function getField(row, fieldName) {
   const key = Object.keys(row).find(
     (k) => String(k).trim().toLowerCase() === fieldName.toLowerCase()
@@ -25,9 +28,28 @@ function getField(row, fieldName) {
   return key ? row[key] : "";
 }
 
-function parseDate(value) {
-  if (!value) return null;
-  return String(value).split(" ")[0];
+function getCacheKey(params) {
+  return JSON.stringify(params);
+}
+
+function getFromCache(key) {
+  const cached = salesCache.get(key);
+
+  if (!cached) return null;
+
+  if (Date.now() - cached.createdAt > CACHE_TTL_MS) {
+    salesCache.delete(key);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function setCache(key, data) {
+  salesCache.set(key, {
+    createdAt: Date.now(),
+    data,
+  });
 }
 
 async function downloadZip(month = "2026_06") {
@@ -124,24 +146,39 @@ async function getSalesDashboard({
   store = "",
   search = "",
 }) {
+  const cacheKey = getCacheKey({
+    brandCode,
+    month,
+    period,
+    country,
+    store,
+    search,
+  });
+
+  const cachedData = getFromCache(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
+
   const zipBuffer = await downloadZip(month);
   const rawRows = parseZipCsv(zipBuffer);
   const storeLookup = buildStoreLookup();
 
   let enrichedRows = rawRows
     .map((row) => {
-      const storeCode = String(row["Store No_"] || "").trim();
+      const storeCode = String(getField(row, "Store No_") || "").trim();
       const storeInfo = storeLookup.get(storeCode);
 
       if (!storeInfo) return null;
 
-      const quantity = Math.abs(toNumber(row["Quantity"]));
-      const netAmount = Math.abs(toNumber(row["Net Amount"]));
-      const discount = Math.abs(toNumber(row["Discount Amount"]));
-      const receiptNo = String(row["Receipt No_"] || "").trim();
+      const quantity = Math.abs(toNumber(getField(row, "Quantity")));
+      const netAmount = Math.abs(toNumber(getField(row, "Net Amount")));
+      const discount = Math.abs(toNumber(getField(row, "Discount Amount")));
+      const receiptNo = String(getField(row, "Receipt No_") || "").trim();
 
       return {
-        date: parseDate(row["Date"]),
+        date: parseDate(getField(row, "Date")),
         store_code: storeCode,
         store_name: storeInfo.store_name,
         brand_code: storeInfo.brand_code,
@@ -151,14 +188,14 @@ async function getSalesDashboard({
         company_code: storeInfo.company_code,
         company_name: storeInfo.company_name,
         receipt_no: receiptNo,
-        transaction_no: row["Transaction No_"],
+        transaction_no: getField(row, "Transaction No_"),
         item_no: getField(row, "Item No_"),
         item_description:
-  getField(row, "Item Description") ||
-  getField(row, "Description") ||
-  getField(row, "Item Description 2") ||
-  getField(row, "Item No_") ||
-  "Unknown Item",
+          getField(row, "Item Description") ||
+          getField(row, "Description") ||
+          getField(row, "Item Description 2") ||
+          getField(row, "Item No_") ||
+          "Unknown Item",
         category_code: getField(row, "Item Category Code"),
         retail_product_code: getField(row, "Retail Product Code"),
         sales_type: normalize(getField(row, "Sales Type") || "UNKNOWN"),
@@ -281,15 +318,12 @@ async function getSalesDashboard({
   const reportingDays = new Set(enrichedRows.map((row) => row.date)).size || 1;
 
   const averageDailySales = netRevenue / reportingDays;
+
   const averageDailySalesPerOutlet =
     activeStoreCount > 0 ? averageDailySales / activeStoreCount : 0;
 
   const countryOptions = Array.from(
     new Set(allBrandRows.map((row) => row.country_name).filter(Boolean))
-  ).sort();
-
-  const companyOptions = Array.from(
-    new Set(allBrandRows.map((row) => row.company_name).filter(Boolean))
   ).sort();
 
   const storeOptions = Array.from(
@@ -305,15 +339,12 @@ async function getSalesDashboard({
     ).values()
   ).sort((a, b) => String(a.store_name).localeCompare(String(b.store_name)));
 
-  const salesTypeOptions = Array.from(
-    new Set(allBrandRows.map((row) => row.sales_type).filter(Boolean))
-  ).sort();
-
-  return {
+  const result = {
     success: true,
     brandCode,
-    brandName: enrichedRows[0]?.brand_name || brandCode,
+    brandName: enrichedRows[0]?.brand_name || allBrandRows[0]?.brand_name || brandCode,
     month,
+    period,
     kpis: {
       netRevenue,
       orders,
@@ -328,9 +359,7 @@ async function getSalesDashboard({
     },
     filters: {
       countries: countryOptions,
-      companies: companyOptions,
       stores: storeOptions,
-      salesTypes: salesTypeOptions,
       periods: ["WTD", "MTD", "YTD"],
     },
     revenueTrend: Array.from(dateMap.entries())
@@ -362,6 +391,10 @@ async function getSalesDashboard({
     topItems: sortDesc(itemRanking, "net_sales").slice(0, 10),
     bottomItems: sortAsc(itemRanking, "net_sales").slice(0, 10),
   };
+
+  setCache(cacheKey, result);
+
+  return result;
 }
 
 module.exports = {
