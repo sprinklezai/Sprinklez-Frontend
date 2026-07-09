@@ -1,0 +1,21 @@
+:root {
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+
+  --primary: #1f5f4a;
+  --primary-dark: #164837;
+  --primary-soft: #e8f3ef;
+
+  --accent: #b07a2a;
+  --accent-soft: #f7efe3;
+
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --text-soft: #9ca3af;
+
+  --border: #e5e7eb;
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+
+  --radius-card: 18px;
+  --radius-button: 12px;
+}
