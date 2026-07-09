@@ -1,7 +1,7 @@
 const AdmZip = require("adm-zip");
 const { parse } = require("csv-parse/sync");
 const { getData } = require("./excelService");
-const { downloadSalesZipFromDrive } = require("./googleDriveSalesService");
+const { loadSalesZip } = require("./fileStorageService");
 
 const monthCache = new Map();
 
@@ -115,7 +115,7 @@ async function loadSalesMonth(month = "2026_06", forceRefresh = false) {
     return monthCache.get(month);
   }
 
-  const zipBuffer = await downloadSalesZipFromDrive(month);
+  const zipBuffer = await loadSalesZip(month);
   const rawRows = parseZipCsv(zipBuffer);
   const storeLookup = buildStoreLookup();
 
