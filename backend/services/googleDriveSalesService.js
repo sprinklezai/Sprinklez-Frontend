@@ -2,32 +2,30 @@ const { google } = require("googleapis");
 
 const SALES_FOLDER_ID = process.env.GOOGLE_DRIVE_SALES_FOLDER_ID;
 
-function parseServiceAccountJson() {
-  let raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+function getPrivateKey() {
+  const key = process.env.GOOGLE_PRIVATE_KEY;
 
-  if (!raw) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is missing");
+  if (!key) {
+    throw new Error("GOOGLE_PRIVATE_KEY is missing");
   }
 
-  raw = raw.trim();
-
-  // Fix Hostinger escaped JSON issue
-  if (raw.startsWith("\\{")) {
-    raw = raw.replace(/^\\/, "");
-  }
-
-  raw = raw.replace(/\\"/g, '"');
-  raw = raw.replace(/\\n/g, "\n");
-
-  return JSON.parse(raw);
+  return key.replace(/\\n/g, "\n");
 }
 
 function getDriveClient() {
-  const credentials = parseServiceAccountJson();
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+
+  if (!clientEmail) {
+    throw new Error("GOOGLE_CLIENT_EMAIL is missing");
+  }
+
+  if (!SALES_FOLDER_ID) {
+    throw new Error("GOOGLE_DRIVE_SALES_FOLDER_ID is missing");
+  }
 
   const auth = new google.auth.JWT({
-    email: credentials.client_email,
-    key: credentials.private_key,
+    email: clientEmail,
+    key: getPrivateKey(),
     scopes: ["https://www.googleapis.com/auth/drive.readonly"],
   });
 
