@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { BarChart3, ShieldCheck, Store, TrendingUp } from "lucide-react";
 
-import Button from "../components/common/Button";
-import Card from "../components/common/Card";
 import Input from "../components/common/Input";
 import PasswordInput from "../components/common/PasswordInput";
 import Logo from "../components/layout/Logo";
@@ -17,7 +16,6 @@ function Login() {
   const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -34,12 +32,12 @@ function Login() {
 
       const result = await login({
         emp_id: employeeId,
-        password: password,
+        password,
       });
 
       if (result.success) {
-          loginUser(result.user, rememberMe);
-          navigate("/overview");
+        loginUser(result.user, rememberMe);
+        navigate("/overview");
       } else {
         setErrorMessage(result.message || "Login failed.");
       }
@@ -53,24 +51,63 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="grid min-h-screen lg:grid-cols-2">
-        <div className="flex items-center justify-center p-10">
-          <Card className="w-full max-w-md">
-            <Logo />
+    <div className="min-h-screen bg-[var(--bg-main)]">
+      <div className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="relative hidden overflow-hidden bg-[var(--primary)] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10" />
+          <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-white/10" />
+
+          <div className="relative">
+            <div className="inline-flex rounded-2xl bg-white px-5 py-4 shadow-lg">
+              <Logo />
+            </div>
+
+            <div className="mt-20 max-w-xl">
+              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
+                Sprinklez F&B Division
+              </p>
+
+              <h1 className="text-5xl font-black leading-tight">
+                Executive Analytics Platform
+              </h1>
+
+              <p className="mt-6 text-lg leading-8 text-white/80">
+                Monitor brands, stores, countries and sales performance from one
+                secure management dashboard.
+              </p>
+            </div>
+          </div>
+
+          <div className="relative grid gap-4 sm:grid-cols-2">
+            <Feature icon={<TrendingUp size={20} />} title="Sales Insights" />
+            <Feature icon={<Store size={20} />} title="Store Performance" />
+            <Feature icon={<BarChart3 size={20} />} title="Brand Analytics" />
+            <Feature icon={<ShieldCheck size={20} />} title="Secure Access" />
+          </div>
+        </section>
+
+        <section className="flex items-center justify-center p-6 sm:p-10">
+          <div className="w-full max-w-md rounded-[var(--radius-card)] border border-[var(--border)] bg-white p-8 shadow-[var(--shadow-card)]">
+            <div className="mb-8 lg:hidden">
+              <Logo />
+            </div>
 
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-slate-800">
-                Welcome Back
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                Welcome back
+              </p>
+
+              <h2 className="text-3xl font-black tracking-tight text-[var(--text-main)]">
+                Sign in to your account
               </h2>
 
-              <p className="mt-2 text-slate-500">
-                Sign in to access the Executive Dashboard
+              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                Access the Sprinklez executive dashboard.
               </p>
             </div>
 
             {errorMessage && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                 {errorMessage}
               </div>
             )}
@@ -90,46 +127,48 @@ function Login() {
             />
 
             <div className="mb-8 flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-slate-600">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 accent-[var(--primary)]"
                 />
-                Remember Me
+                Remember me
               </label>
 
-              <button className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                Forgot Password?
+              <button
+                type="button"
+                className="text-sm font-bold text-[var(--primary)] hover:text-[var(--primary-dark)]"
+              >
+                Forgot password?
               </button>
             </div>
 
-            <Button fullWidth onClick={handleLogin} disabled={loading}>
-              {loading ? "Signing in..." : "Login"}
-            </Button>
-          </Card>
-        </div>
+            <button
+              type="button"
+              onClick={handleLogin}
+              disabled={loading}
+              className="w-full rounded-[var(--radius-button)] bg-[var(--primary)] px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
 
-        <div className="hidden lg:block">
-          <div
-            className="flex h-full items-center justify-center bg-cover bg-center"
-            style={{
-              backgroundImage: "url('/login-bg.jpg')",
-            }}
-          >
-            <div className="rounded-3xl bg-white/80 p-12 text-center backdrop-blur">
-              <h2 className="mb-6 text-5xl font-bold text-slate-800">
-                Executive Dashboard
-              </h2>
-
-              <p className="mx-auto max-w-md text-lg leading-8 text-slate-600">
-                Monitor your companies, stores, brands and sales performance
-                from one centralized platform.
-              </p>
-            </div>
+            <p className="mt-8 text-center text-xs text-[var(--text-soft)]">
+              © 2026 Sprinklez General Trading · F&B Analytics
+            </p>
           </div>
-        </div>
+        </section>
       </div>
+    </div>
+  );
+}
+
+function Feature({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+      <div className="mb-3 inline-flex rounded-xl bg-white/15 p-3">{icon}</div>
+      <p className="text-sm font-bold text-white">{title}</p>
     </div>
   );
 }
