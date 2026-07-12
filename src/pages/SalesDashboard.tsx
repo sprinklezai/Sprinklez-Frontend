@@ -15,6 +15,10 @@ import PieChartCard from "../components/charts/PieChartCard";
 import BarChartCard from "../components/charts/BarChartCard";
 import LineChartCard from "../components/charts/LineChartCard";
 import { getSalesDashboard } from "../api/sales";
+import {
+  getSalesMonths,
+  type SalesMonthOption,
+} from "../services/salesMonths";
 
 function SalesDashboard() {
   const { brandCode } = useParams();
@@ -23,7 +27,11 @@ function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [salesData, setSalesData] = useState<any>(null);
 
-  const [month, setMonth] = useState("2026_06");
+  const [monthOptions, setMonthOptions] = useState<SalesMonthOption[]>([]);
+  const [month, setMonth] = useState("");
+  const [monthsLoading, setMonthsLoading] = useState(true);
+  const [monthsError, setMonthsError] = useState("");
+
   const [period, setPeriod] = useState("YTD");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedStore, setSelectedStore] = useState("");
@@ -53,7 +61,51 @@ const money = (value: number) =>
       .replace(/^CSC\s+/i, "")
       .trim();
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAvailableMonths() {
+      try {
+        setMonthsLoading(true);
+        setMonthsError("");
+
+        const result = await getSalesMonths();
+
+        if (!isMounted) return;
+
+        const availableMonths = result.months || [];
+        setMonthOptions(availableMonths);
+
+        if (result.latestMonth) {
+          setMonth(result.latestMonth);
+        } else if (availableMonths.length > 0) {
+          setMonth(availableMonths[0].value);
+        } else {
+          setMonthsError("No sales summary files are available.");
+        }
+      } catch (error) {
+        console.error("Failed to load sales months:", error);
+
+        if (isMounted) {
+          setMonthsError("Unable to load available sales months.");
+        }
+      } finally {
+        if (isMounted) {
+          setMonthsLoading(false);
+        }
+      }
+    }
+
+    loadAvailableMonths();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const loadSales = async () => {
+    if (!code || !month) return;
+
     try {
       setLoading(true);
 
@@ -73,8 +125,22 @@ const money = (value: number) =>
   };
 
   useEffect(() => {
-    if (code) loadSales();
+    if (code && month) {
+      loadSales();
+    }
   }, [code, month, period, selectedCountry, selectedStore]);
+
+  const handleMonthChange = (value: string) => {
+    setMonth(value);
+    setSelectedCountry("");
+    setSelectedStore("");
+    setSearch("");
+  };
+
+  const selectedMonthLabel =
+    monthOptions.find((option) => option.value === month)?.label ||
+    month ||
+    "Loading month";
 
   const resetFilters = () => {
     setSelectedCountry("");
@@ -138,7 +204,7 @@ const money = (value: number) =>
                 Executive Business Overview
               </h1>
               <p className="text-xs text-stone-500">
-                {brandName} · {period} · June 2026 · Updated from sales file
+                {brandName} · {period} · {selectedMonthLabel} · Updated from sales summary
               </p>
             </div>
 
@@ -158,7 +224,10 @@ const money = (value: number) =>
 
               <select
                 value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCountry(e.target.value);
+                  setSelectedStore("");
+                }}
                 className="h-10 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 outline-none"
               >
                 <option value="">All Countries</option>
@@ -188,10 +257,24 @@ const money = (value: number) =>
 
               <select
                 value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="h-10 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 outline-none"
+                onChange={(e) => handleMonthChange(e.target.value)}
+                disabled={monthsLoading || monthOptions.length === 0}
+                className="h-10 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 outline-none disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <option value="2026_06">Jun 2026</option>
+                {monthsLoading && (
+                  <option value="">Loading months...</option>
+                )}
+
+                {!monthsLoading && monthOptions.length === 0 && (
+                  <option value="">No months available</option>
+                )}
+
+                {!monthsLoading &&
+                  monthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
               </select>
 
               <div className="relative">
@@ -213,7 +296,8 @@ const money = (value: number) =>
               <button
                 type="button"
                 onClick={loadSales}
-                className="flex h-10 items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-xs font-bold text-stone-700 hover:bg-stone-100"
+                disabled={!month}
+                className="flex h-10 items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-xs font-bold text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RefreshCw size={14} />
                 Refresh
@@ -238,7 +322,13 @@ const money = (value: number) =>
           </div>
         </section>
 
-        {loading ? (
+        {monthsError && (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+            {monthsError}
+          </div>
+        )}
+
+        {loading || monthsLoading ? (
           <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-8 text-stone-500 shadow-sm">
             Loading sales dashboard...
           </div>
