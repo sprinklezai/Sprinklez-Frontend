@@ -106,7 +106,7 @@ function Login() {
         <section className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md rounded-[var(--radius-card)] border border-[var(--border)] bg-white p-8 shadow-[var(--shadow-card)]">
             <div className="mb-8 lg:hidden">
-              <Logo />
+              
             </div>
 
             <div className="mb-8">
