@@ -51,15 +51,21 @@ function Sidebar({ brandCode }: SidebarProps) {
   ];
 
   return (
-    <aside className="hidden min-h-screen w-72 border-r border-slate-200 bg-white lg:block">
-      <div className="flex h-20 items-center border-b border-slate-200 px-6">
+    <aside className="hidden min-h-screen w-72 bg-gradient-to-b from-[#0F6B52] to-[#063F31] text-white shadow-xl lg:flex lg:flex-col">
+
+      <div className="flex h-20 items-center border-b border-white/10 px-6">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Sprinklez</h2>
-          <p className="text-sm text-slate-500">Brand Workspace</p>
+          <h2 className="text-xl font-bold tracking-wide">
+            Sprinklez
+          </h2>
+
+          <p className="text-sm text-emerald-100">
+            Executive Workspace
+          </p>
         </div>
       </div>
 
-      <nav className="space-y-2 p-4">
+      <nav className="flex-1 space-y-2 p-4">
         {links.map((item) => {
           const Icon = item.icon;
 
@@ -69,10 +75,10 @@ function Sidebar({ brandCode }: SidebarProps) {
               to={item.path}
               end={item.path === `/brand/${brandCode}`}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
                   isActive
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-white/15 text-white shadow-lg"
+                    : "text-emerald-50 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
@@ -83,15 +89,16 @@ function Sidebar({ brandCode }: SidebarProps) {
         })}
       </nav>
 
-      <div className="absolute bottom-0 w-72 border-t border-slate-200 p-4">
+      <div className="border-t border-white/10 p-4">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50"
+          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/20 hover:text-white"
         >
           <LogOut size={20} />
           Logout
         </button>
       </div>
+
     </aside>
   );
 }

@@ -21,18 +21,14 @@ const brandLogoMap: Record<string, string> = {
 function Overview() {
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<any>(null);
-  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     async function loadOverview() {
       try {
-        setLoading(true);
-        setErrorMessage("");
         const data = await getOverview();
         setOverview(data);
       } catch (error) {
         console.error("Overview loading failed:", error);
-        setErrorMessage("Unable to load overview data.");
       } finally {
         setLoading(false);
       }
@@ -47,48 +43,54 @@ function Overview() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-[#F7F8FA] px-1 py-2">
+      <div
+        className="min-h-screen rounded-3xl px-3 py-4"
+        style={{
+          background:
+            "radial-gradient(circle at 85% 5%, rgba(15,107,82,0.12), transparent 28%), linear-gradient(135deg, #F4F8F6 0%, #EEF6F2 45%, #F8FAF9 100%)",
+        }}
+      >
+        <section className="mb-6 overflow-hidden rounded-3xl border border-emerald-100 bg-white/85 p-7 shadow-sm backdrop-blur">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#C89B3C]">
+            Executive Overview
+          </p>
+          <h1 className="mt-2 text-3xl font-extrabold text-stone-950">
+            Brand Portfolio & Market Footprint
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-500">
+            A focused view of the Sprinklez F&amp;B portfolio, country presence
+            and store distribution.
+          </p>
+        </section>
+
         {loading ? (
           <div className="rounded-3xl border border-stone-200 bg-white p-8 text-stone-500 shadow-sm">
             Loading overview data...
           </div>
-        ) : errorMessage ? (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">
-            {errorMessage}
-          </div>
         ) : (
           <>
-            <section className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-stone-200 bg-white/90 p-6 shadow-sm backdrop-blur">
               <div className="mb-6">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#C89B3C]">
-                  Executive Portfolio
-                </p>
-                <h1 className="mt-2 text-2xl font-extrabold text-stone-950">
+                <h2 className="text-xl font-bold text-stone-900">
                   Our Brand Portfolio
-                </h1>
-                <p className="mt-1 text-sm text-stone-500">
-                  Select a brand to view its detailed performance dashboard.
+                </h2>
+                <p className="text-sm text-stone-500">
+                  Select a brand to view its executive sales dashboard.
                 </p>
               </div>
 
-              {brandCards.length > 0 ? (
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                  {brandCards.map((brand: any) => (
-                    <BrandCard
-                      key={brand.brand_code}
-                      name={brand.brand_name}
-                      code={brand.brand_code}
-                      logo={brandLogoMap[brand.brand_code] || ""}
-                      stores={brand.stores}
-                      countries={brand.countries}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-8 text-center text-sm text-stone-500">
-                  No brand portfolio data is available.
-                </div>
-              )}
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                {brandCards.map((brand: any) => (
+                  <BrandCard
+                    key={brand.brand_code}
+                    name={brand.brand_name}
+                    code={brand.brand_code}
+                    logo={brandLogoMap[brand.brand_code] || ""}
+                    stores={brand.stores}
+                    countries={brand.countries}
+                  />
+                ))}
+              </div>
             </section>
 
             <section className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -103,7 +105,7 @@ function Overview() {
 
               <BarChartCard
                 title="Brand Contribution by Store Count"
-                subtitle="Top brands by number of stores"
+                subtitle="Portfolio concentration by store count"
                 data={topBrands.slice(0, 8).map((item: any) => ({
                   name: item.brand_name,
                   value: Number(item.stores || 0),

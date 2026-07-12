@@ -10,21 +10,25 @@ interface BrandLayoutProps {
   children: React.ReactNode;
 }
 
-function BrandLayout({ brandCode, brandName, children }: BrandLayoutProps) {
+function BrandLayout({
+  brandCode,
+  brandName,
+  children,
+}: BrandLayoutProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 lg:flex">
+    <div className="min-h-screen bg-[#F4F8F6] lg:flex">
       <Sidebar brandCode={brandCode} />
 
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <header className="sticky top-0 z-40 border-b border-emerald-100 bg-white/90 backdrop-blur">
           <div className="flex h-20 items-center justify-between px-6 lg:px-8">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate("/overview")}
-                className="rounded-xl border border-slate-200 p-3 text-slate-500 hover:bg-slate-50"
+                className="rounded-xl border border-emerald-100 p-3 text-slate-500 transition hover:bg-emerald-50 hover:text-[#0F6B52]"
               >
                 <ArrowLeft size={20} />
               </button>
@@ -33,6 +37,7 @@ function BrandLayout({ brandCode, brandName, children }: BrandLayoutProps) {
                 <h1 className="text-xl font-bold text-slate-900">
                   {brandName || brandCode} Dashboard
                 </h1>
+
                 <p className="text-sm text-slate-500">
                   Brand-specific performance workspace
                 </p>
@@ -40,7 +45,7 @@ function BrandLayout({ brandCode, brandName, children }: BrandLayoutProps) {
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="hidden rounded-xl border border-slate-200 p-3 text-slate-500 hover:bg-slate-50 sm:block">
+              <button className="hidden rounded-xl border border-emerald-100 p-3 text-slate-500 transition hover:bg-emerald-50 hover:text-[#0F6B52] sm:block">
                 <Bell size={20} />
               </button>
 
@@ -48,12 +53,13 @@ function BrandLayout({ brandCode, brandName, children }: BrandLayoutProps) {
                 <p className="font-semibold text-slate-800">
                   {user?.emp_name}
                 </p>
+
                 <p className="text-sm text-slate-500">
                   {user?.designation}
                 </p>
               </div>
 
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0F6B52] font-bold text-white shadow-sm">
                 {user?.emp_name?.charAt(0) || "S"}
               </div>
             </div>
@@ -64,10 +70,12 @@ function BrandLayout({ brandCode, brandName, children }: BrandLayoutProps) {
           {children}
         </main>
 
-        <footer className="border-t border-slate-200 bg-white px-6 py-5 text-sm text-slate-500 lg:px-8">
+        <footer className="border-t border-emerald-100 bg-white px-6 py-5 text-sm text-slate-500 lg:px-8">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p>© 2026 Sprinklez General Trading LLC</p>
-            <p>{brandName || brandCode} · Brand Workspace</p>
+            <p>
+              {brandName || brandCode} · Brand Workspace
+            </p>
           </div>
         </footer>
       </div>

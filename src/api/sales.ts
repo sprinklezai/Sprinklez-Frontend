@@ -1,21 +1,29 @@
-import api from "./api";
+import api from "../services/api";
+
+export interface SalesDashboardFilters {
+  period?: string;
+  country?: string;
+  store?: string;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+}
 
 export async function getSalesDashboard(
   brandCode: string,
-  month = "2026_06",
-  filters: {
-    period?: string;
-    country?: string;
-    store?: string;
-    search?: string;
-  } = {}
+  month: string,
+  filters: SalesDashboardFilters = {}
 ) {
   const response = await api.get(`/sales/${brandCode}`, {
     params: {
       month,
-      ...filters,
+      period: filters.period || "MTD",
+      country: filters.country || "",
+      store: filters.store || "",
+      search: filters.search || "",
+      fromDate: filters.fromDate || "",
+      toDate: filters.toDate || "",
     },
   });
-
   return response.data;
 }
