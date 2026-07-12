@@ -4,7 +4,7 @@ import { BarChart3, ShieldCheck, Store, TrendingUp } from "lucide-react";
 
 import Input from "../components/common/Input";
 import PasswordInput from "../components/common/PasswordInput";
-import Logo from "../components/layout/Logo";
+
 
 import { login } from "../services/auth";
 import { useAuth } from "../context/AuthContext";
@@ -57,26 +57,43 @@ function Login() {
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/10" />
           <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-white/10" />
 
-          <div className="relative">
-            <div className="inline-flex rounded-2xl bg-white px-5 py-4 shadow-lg">
-              <Logo />
-            </div>
+<div className="relative hidden overflow-hidden bg-[#175F49] p-8 lg:flex lg:flex-col">
+  <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10" />
+  <div className="absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-white/10" />
 
-            <div className="mt-20 max-w-xl">
-              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
-                Sprinklez F&B Division
-              </p>
+  <div className="relative z-10 flex flex-1 flex-col justify-center">
+    <p className="text-sm font-bold uppercase tracking-[0.32em] text-emerald-100">
+      Sprinklez F&B Division
+    </p>
 
-              <h1 className="text-5xl font-black leading-tight">
-                Executive Analytics Platform
-              </h1>
+    <h1 className="mt-6 max-w-2xl text-5xl font-black leading-tight text-white">
+      Executive Analytics Platform
+    </h1>
 
-              <p className="mt-6 text-lg leading-8 text-white/80">
-                Monitor brands, stores, countries and sales performance from one
-                secure management dashboard.
-              </p>
-            </div>
-          </div>
+    <p className="mt-6 max-w-2xl text-lg leading-8 text-emerald-50">
+      Monitor brands, stores, countries and sales performance from one secure
+      management dashboard.
+    </p>
+
+    <div className="mt-10 grid gap-4 sm:grid-cols-2">
+      <div className="rounded-2xl border border-white/15 bg-white/10 p-5 text-white backdrop-blur">
+        <p className="font-bold">Sales Insights</p>
+      </div>
+
+      <div className="rounded-2xl border border-white/15 bg-white/10 p-5 text-white backdrop-blur">
+        <p className="font-bold">Store Performance</p>
+      </div>
+
+      <div className="rounded-2xl border border-white/15 bg-white/10 p-5 text-white backdrop-blur">
+        <p className="font-bold">Brand Analytics</p>
+      </div>
+
+      <div className="rounded-2xl border border-white/15 bg-white/10 p-5 text-white backdrop-blur">
+        <p className="font-bold">Secure Access</p>
+      </div>
+    </div>
+  </div>
+</div>
 
           <div className="relative grid gap-4 sm:grid-cols-2">
             <Feature icon={<TrendingUp size={20} />} title="Sales Insights" />
