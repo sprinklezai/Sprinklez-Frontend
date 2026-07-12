@@ -1,3 +1,5 @@
+
+import StoreSalesTable from "../components/widgets/StoreSalesTable";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -330,7 +332,13 @@ function SalesDashboard() {
 
             <section className="mt-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
               <h3 className="text-base font-bold text-stone-900">Store Performance</h3>
-              <StoreTable data={salesData?.topStores || []} formatMoney={compactMoney} formatNumber={number} cleanStoreName={cleanStoreName} />
+              <StoreSalesTable
+              data={salesData?.storeDirectory || []}
+              reportingDays={Number(
+              salesData?.kpis?.reportingDays || 1
+                )}
+                pageSize={15}
+                />
             </section>
           </>
         )}
@@ -390,34 +398,7 @@ function ExecutiveAlerts({ alerts }: { alerts: any[] }) {
   );
 }
 
-function StoreTable({ data, formatMoney, formatNumber, cleanStoreName }: any) {
-  return (
-    <div className="mt-4 overflow-x-auto">
-      <table className="w-full min-w-[900px] text-left text-sm">
-        <thead>
-          <tr className="border-b text-xs uppercase text-stone-400">
-            <th className="py-3">#</th><th>Location</th><th>Country</th>
-            <th className="text-right">Revenue</th><th className="text-right">Orders</th>
-            <th className="text-right">Avg Bill</th><th className="text-right">Contribution</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((store: any, index: number) => (
-            <tr key={store.store_code} className="border-b border-stone-100">
-              <td className="py-4 font-bold text-[#C89B3C]">{String(index + 1).padStart(2, "0")}</td>
-              <td className="font-bold">{cleanStoreName(store.store_name)}</td>
-              <td>{store.country_name}</td>
-              <td className="text-right font-bold">{formatMoney(store.net_sales)}</td>
-              <td className="text-right">{formatNumber(store.orders)}</td>
-              <td className="text-right">{formatMoney(store.avg_order_value)}</td>
-              <td className="text-right">{Number(store.contribution_percent || 0).toFixed(1)}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+
 
 function ItemTable({ title, data, mode, onModeChange, formatMoney, formatNumber }: any) {
   return (
