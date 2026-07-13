@@ -1,5 +1,6 @@
 
 import StoreSalesTable from "../components/widgets/StoreSalesTable";
+import RevenueComparisonPanel from "../components/widgets/RevenueComparisonPanel";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -156,7 +157,6 @@ function SalesDashboard() {
   const revenueTrend = mapTrend(salesData?.revenueTrend);
   const ordersTrend = mapTrend(salesData?.ordersTrend);
   const aovTrend = mapTrend(salesData?.avgOrderValueTrend);
-
   const countrySales =
     salesData?.countrySales?.map((item: any) => ({
       name: item.name,
@@ -313,6 +313,20 @@ function SalesDashboard() {
               <Kpi title="Discount %" value={`${Number(kpis.discountPercent || 0).toFixed(2)}%`} icon={<Percent size={18} />} accent="gold" />
             </section>
 
+            <section className="mt-6">
+              <RevenueComparisonPanel
+                monthlyData={
+                  salesData?.revenueComparison
+                    ?.monthlyRevenueComparison || []
+                }
+                regionData={
+                  salesData?.revenueComparison
+                    ?.regionRevenue || []
+                }
+                currency={salesData?.currency || "AED"}
+              />
+            </section>
+
             <section className="mt-6 grid gap-5 xl:grid-cols-3">
               <LineChartCard title="Revenue Trend" subtitle="Net revenue over time" data={revenueTrend} />
               <LineChartCard title="Orders Trend" subtitle="Transactions over time" data={ordersTrend} />
@@ -330,8 +344,7 @@ function SalesDashboard() {
               <ItemTable title="Bottom Selling Items" data={bottomItems} mode={bottomMode} onModeChange={setBottomMode} formatMoney={compactMoney} formatNumber={number} />
             </section>
 
-            <section className="mt-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-              <h3 className="text-base font-bold text-stone-900">Store Performance</h3>
+            <section className="mt-6">
               <StoreSalesTable
               data={salesData?.storeDirectory || []}
               reportingDays={Number(
