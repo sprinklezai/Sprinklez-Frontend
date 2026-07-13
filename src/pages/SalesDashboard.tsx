@@ -27,6 +27,139 @@ import {
 
 type ItemMode = "revenue" | "quantity";
 
+type SalesPeriod = "WTD" | "MTD" | "YTD";
+
+function formatIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function monthValueFromDate(dateValue: string) {
+  return String(dateValue || "").slice(0, 7).replace("-", "_");
+}
+
+function parseMonthValue(monthValue: string) {
+  const match = /^(\d{4})_(\d{2})$/.exec(monthValue);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    year: Number(match[1]),
+    monthIndex: Number(match[2]) - 1,
+  };
+}
+
+function getMonthStart(monthValue: string) {
+  const parsed = parseMonthValue(monthValue);
+
+  if (!parsed) {
+    return "";
+  }
+
+  return formatIsoDate(
+    new Date(parsed.year, parsed.monthIndex, 1)
+  );
+}
+
+function getMonthEnd(monthValue: string) {
+  const parsed = parseMonthValue(monthValue);
+
+  if (!parsed) {
+    return "";
+  }
+
+  return formatIsoDate(
+    new Date(parsed.year, parsed.monthIndex + 1, 0)
+  );
+}
+
+function getMonthCutoff(
+  monthValue: string,
+  latestAvailableDate: string
+) {
+  if (!monthValue) {
+    return latestAvailableDate || "";
+  }
+
+  const monthEnd = getMonthEnd(monthValue);
+  const latestMonth = monthValueFromDate(latestAvailableDate);
+
+  if (
+    latestAvailableDate &&
+    monthValue === latestMonth
+  ) {
+    return latestAvailableDate;
+  }
+
+  return monthEnd;
+}
+
+function getMondayWeekStart(dateValue: string) {
+  if (!dateValue) {
+    return "";
+  }
+
+  const date = new Date(`${dateValue}T00:00:00`);
+  const day = date.getDay();
+  const daysFromMonday = day === 0 ? 6 : day - 1;
+
+  date.setDate(date.getDate() - daysFromMonday);
+
+  return formatIsoDate(date);
+}
+
+function getAutomaticDateRange(
+  period: SalesPeriod,
+  monthValue: string,
+  latestAvailableDate: string
+) {
+  const parsed = parseMonthValue(monthValue);
+  const monthStart = getMonthStart(monthValue);
+  const cutoff = getMonthCutoff(
+    monthValue,
+    latestAvailableDate
+  );
+
+  if (!parsed || !monthStart || !cutoff) {
+    return {
+      fromDate: "",
+      toDate: latestAvailableDate || "",
+    };
+  }
+
+  if (period === "YTD") {
+    return {
+      fromDate: `${parsed.year}-01-01`,
+      toDate: cutoff,
+    };
+  }
+
+  if (period === "WTD") {
+    const calculatedWeekStart =
+      getMondayWeekStart(cutoff);
+
+    return {
+      // Keep WTD inside the selected month.
+      fromDate:
+        calculatedWeekStart < monthStart
+          ? monthStart
+          : calculatedWeekStart,
+      toDate: cutoff,
+    };
+  }
+
+  return {
+    fromDate: monthStart,
+    toDate: cutoff,
+  };
+}
+
+
 function SalesDashboard() {
   const { brandCode } = useParams();
   const code = String(brandCode || "").toUpperCase();
@@ -38,12 +171,13 @@ function SalesDashboard() {
   const [monthsLoading, setMonthsLoading] = useState(true);
   const [monthsError, setMonthsError] = useState("");
 
-  const [period, setPeriod] = useState("YTD");
+  const [period, setPeriod] = useState<SalesPeriod>("MTD");
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedStore, setSelectedStore] = useState("");
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState("2026-01-01");
-  const [toDate, setToDate] = useState("2026-07-11");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [latestAvailableDate, setLatestAvailableDate] = useState("");
   const [topMode, setTopMode] = useState<ItemMode>("revenue");
   const [bottomMode, setBottomMode] = useState<ItemMode>("revenue");
 
@@ -79,13 +213,24 @@ function SalesDashboard() {
         if (!mounted) return;
 
         const months = result.months || [];
-        setMonthOptions(months);
-        setMonth(result.latestMonth || months[0]?.value || "");
+        const latestMonth =
+          result.latestMonth || months[0]?.value || "";
+        const latestDate =
+          result.latestAvailableDate || "";
 
-        if (result.latestAvailableDate) {
-          setToDate(result.latestAvailableDate);
-          setFromDate(`${result.latestAvailableDate.slice(0, 4)}-01-01`);
-        }
+        setMonthOptions(months);
+        setMonth(latestMonth);
+        setLatestAvailableDate(latestDate);
+        setPeriod("MTD");
+
+        const automaticRange = getAutomaticDateRange(
+          "MTD",
+          latestMonth,
+          latestDate
+        );
+
+        setFromDate(automaticRange.fromDate);
+        setToDate(automaticRange.toDate);
       } catch (error) {
         console.error(error);
         if (mounted) setMonthsError("Unable to load available sales months.");
@@ -125,15 +270,60 @@ function SalesDashboard() {
     if (code && month) loadSales();
   }, [code, month, period, selectedCountry, selectedStore, fromDate, toDate]);
 
+  const applyAutomaticRange = (
+    nextPeriod: SalesPeriod,
+    nextMonth: string
+  ) => {
+    const automaticRange = getAutomaticDateRange(
+      nextPeriod,
+      nextMonth,
+      latestAvailableDate
+    );
+
+    setFromDate(automaticRange.fromDate);
+    setToDate(automaticRange.toDate);
+  };
+
+  const handlePeriodChange = (
+    nextPeriod: SalesPeriod
+  ) => {
+    setPeriod(nextPeriod);
+    applyAutomaticRange(nextPeriod, month);
+  };
+
+  const handleMonthChange = (
+    nextMonth: string
+  ) => {
+    setMonth(nextMonth);
+    applyAutomaticRange(period, nextMonth);
+  };
+
   const resetFilters = () => {
+    const latestMonth =
+      monthOptions[0]?.value || month;
+
     setSelectedCountry("");
     setSelectedStore("");
     setSearch("");
-    setPeriod("YTD");
-    if (toDate) setFromDate(`${toDate.slice(0, 4)}-01-01`);
+    setMonth(latestMonth);
+    setPeriod("MTD");
+
+    const automaticRange = getAutomaticDateRange(
+      "MTD",
+      latestMonth,
+      latestAvailableDate
+    );
+
+    setFromDate(automaticRange.fromDate);
+    setToDate(automaticRange.toDate);
   };
 
   const kpis = salesData?.kpis || {};
+
+  const selectedMonthCutoff = getMonthCutoff(
+    month,
+    latestAvailableDate
+  );
   const brandName =
     salesData?.brandName ||
     {
@@ -204,8 +394,19 @@ function SalesDashboard() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <DateField label="From Date" value={fromDate} onChange={setFromDate} />
-              <DateField label="To Date" value={toDate} onChange={setToDate} />
+              <DateField
+                label="From Date"
+                value={fromDate}
+                onChange={setFromDate}
+                max={selectedMonthCutoff}
+              />
+
+              <DateField
+                label="To Date"
+                value={toDate}
+                onChange={setToDate}
+                max={selectedMonthCutoff}
+              />
 
               <select
                 value={selectedStore}
@@ -237,11 +438,11 @@ function SalesDashboard() {
               </select>
 
               <div className="flex h-11 rounded-xl border border-stone-300 bg-white p-1">
-                {["WTD", "MTD", "YTD"].map((item) => (
+                {(["WTD", "MTD", "YTD"] as SalesPeriod[]).map((item) => (
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setPeriod(item)}
+                    onClick={() => handlePeriodChange(item)}
                     className={`rounded-lg px-4 text-xs font-bold ${
                       period === item
                         ? "bg-[#0F6B52] text-white"
@@ -255,7 +456,7 @@ function SalesDashboard() {
 
               <select
                 value={month}
-                onChange={(e) => setMonth(e.target.value)}
+                onChange={(e) => handleMonthChange(e.target.value)}
                 disabled={monthsLoading}
                 className="h-11 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold"
               >
@@ -265,6 +466,13 @@ function SalesDashboard() {
                   </option>
                 ))}
               </select>
+
+              {latestAvailableDate && (
+                <div className="flex h-11 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-[#0F6B52]">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Latest data: {latestAvailableDate}
+                </div>
+              )}
 
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-3.5 text-stone-400" />
@@ -360,11 +568,27 @@ function SalesDashboard() {
   );
 }
 
-function DateField({ label, value, onChange }: any) {
+function DateField({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+}: any) {
   return (
     <label className="rounded-xl border border-stone-300 bg-white px-3 py-1.5">
-      <span className="block text-[10px] font-semibold text-stone-400">{label}</span>
-      <input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent text-xs font-semibold outline-none" />
+      <span className="block text-[10px] font-semibold text-stone-400">
+        {label}
+      </span>
+
+      <input
+        type="date"
+        value={value}
+        min={min}
+        max={max}
+        onChange={(event) => onChange(event.target.value)}
+        className="bg-transparent text-xs font-semibold outline-none"
+      />
     </label>
   );
 }

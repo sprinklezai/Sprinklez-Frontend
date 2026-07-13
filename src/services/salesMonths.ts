@@ -18,10 +18,9 @@ export interface SalesMonthsResponse {
 }
 
 export async function getSalesMonths(): Promise<SalesMonthsResponse> {
-  const response =
-    await api.get<SalesMonthsResponse>(
-      "/sales-months"
-    );
+  const response = await api.get<SalesMonthsResponse>(
+    "/sales-months"
+  );
 
   return response.data;
 }
