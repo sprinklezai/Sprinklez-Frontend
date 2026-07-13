@@ -1,6 +1,8 @@
 
 import StoreSalesTable from "../components/widgets/StoreSalesTable";
 import RevenueComparisonPanel from "../components/widgets/RevenueComparisonPanel";
+import ManagementSummary from "../components/widgets/ManagementSummary";
+import HourlySalesTrend from "../components/widgets/HourlySalesTrend";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -512,6 +514,10 @@ function SalesDashboard() {
           </div>
         ) : (
           <>
+            <section className="mt-6">
+              <ManagementSummary data={salesData?.managementSummary || null} />
+            </section>
+
             <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
               <Kpi title="Net Revenue" value={compactMoney(kpis.netRevenue)} icon={<TrendingUp size={18} />} />
               <Kpi title="Total Orders" value={number(kpis.orders)} icon={<Receipt size={18} />} />
@@ -539,6 +545,10 @@ function SalesDashboard() {
               <LineChartCard title="Revenue Trend" subtitle="Net revenue over time" data={revenueTrend} />
               <LineChartCard title="Orders Trend" subtitle="Transactions over time" data={ordersTrend} />
               <LineChartCard title="Average Order Value Trend" subtitle="Spend per transaction" data={aovTrend} />
+            </section>
+
+            <section className="mt-6">
+              <HourlySalesTrend data={salesData?.hourlySalesTrend || []} currency={salesData?.currency || "AED"} />
             </section>
 
             <section className="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr_1.2fr]">
