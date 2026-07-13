@@ -2,7 +2,6 @@
 import StoreSalesTable from "../components/widgets/StoreSalesTable";
 import RevenueComparisonPanel from "../components/widgets/RevenueComparisonPanel";
 import ManagementSummary from "../components/widgets/ManagementSummary";
-import HourlySalesTrend from "../components/widgets/HourlySalesTrend";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -11,6 +10,7 @@ import {
   CheckCircle2,
   CreditCard,
   Download,
+  Loader2,
   Percent,
   Receipt,
   RefreshCw,
@@ -326,6 +326,8 @@ function SalesDashboard() {
     month,
     latestAvailableDate
   );
+
+  const isDashboardRefreshing = loading || monthsLoading;
   const brandName =
     salesData?.brandName ||
     {
@@ -379,7 +381,14 @@ function SalesDashboard() {
 
   return (
     <BrandLayout brandCode={code} brandName={brandName}>
-      <div className="min-h-screen bg-[#F4F8F6]">
+      <div className="relative min-h-screen bg-[#F4F8F6]">
+        <div
+          className={`transition-all duration-300 ${
+            isDashboardRefreshing
+              ? "pointer-events-none select-none blur-sm"
+              : "blur-0"
+          }`}
+        >
         <section className="sticky top-0 z-20 border-b border-emerald-100 bg-[#F4F8F6]/95 px-1 py-4 backdrop-blur">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
@@ -508,12 +517,7 @@ function SalesDashboard() {
           </div>
         )}
 
-        {loading || monthsLoading ? (
-          <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-8 text-stone-500">
-            Loading sales dashboard...
-          </div>
-        ) : (
-          <>
+        <>
             <section className="mt-6">
               <ManagementSummary data={salesData?.managementSummary || null} />
             </section>
@@ -547,9 +551,8 @@ function SalesDashboard() {
               <LineChartCard title="Average Order Value Trend" subtitle="Spend per transaction" data={aovTrend} />
             </section>
 
-            <section className="mt-6">
-              <HourlySalesTrend data={salesData?.hourlySalesTrend || []} currency={salesData?.currency || "AED"} />
-            </section>
+            {/* Hourly Sales Trend is temporarily disabled.
+                Enable it after the LS Retail analytics view provides hourly data. */}
 
             <section className="mt-6 grid gap-5 xl:grid-cols-[1fr_1fr_1.2fr]">
               <PieChartCard title="Revenue by Channel" subtitle="Contribution by channel" data={channelMix} />
@@ -572,6 +575,33 @@ function SalesDashboard() {
                 />
             </section>
           </>
+        </div>
+
+        {isDashboardRefreshing && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/25 px-4 backdrop-blur-[2px]"
+            role="status"
+            aria-live="polite"
+            aria-label="Refreshing Executive Dashboard"
+          >
+            <div className="w-full max-w-sm rounded-3xl border border-white/70 bg-white/95 p-7 text-center shadow-2xl backdrop-blur-xl">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-[#0F6B52]">
+                <Loader2 size={30} className="animate-spin" />
+              </div>
+
+              <h2 className="mt-5 text-lg font-extrabold text-stone-950">
+                Refreshing Executive Dashboard
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-stone-500">
+                Loading the latest sales data, KPIs, trends and store performance.
+              </p>
+
+              <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-emerald-100">
+                <div className="h-full w-2/3 animate-pulse rounded-full bg-[#0F6B52]" />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </BrandLayout>
