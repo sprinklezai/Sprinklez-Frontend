@@ -1,5 +1,3 @@
-
-import SalesAiChat from "../components/chat/SalesAiChat";
 import StoreSalesTable from "../components/widgets/StoreSalesTable";
 import RevenueComparisonPanel from "../components/widgets/RevenueComparisonPanel";
 import ManagementSummary from "../components/widgets/ManagementSummary";
@@ -605,24 +603,6 @@ function SalesDashboard() {
           </div>
         )}
       </div>
-
-      <SalesAiChat
-      filters={{
-        brandCode: code,
-        month,
-        period,
-        country: selectedCountry,
-        store: selectedStore,
-        fromDate,
-        toDate,
-      }}
-    />
-
-
-
-
-
-
     </BrandLayout>
   );
 }
