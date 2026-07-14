@@ -1,6 +1,7 @@
 import StoreSalesTable from "../components/widgets/StoreSalesTable";
 import RevenueComparisonPanel from "../components/widgets/RevenueComparisonPanel";
 import ManagementSummary from "../components/widgets/ManagementSummary";
+import SalesByDayAnalysis from "../components/widgets/SalesByDayAnalysis";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -548,6 +549,14 @@ function SalesDashboard() {
               <LineChartCard title="Revenue Trend" subtitle="Net revenue over time" data={revenueTrend} />
               <LineChartCard title="Orders Trend" subtitle="Transactions over time" data={ordersTrend} />
               <LineChartCard title="Average Order Value Trend" subtitle="Spend per transaction" data={aovTrend} />
+            </section>
+
+            <section className="mt-6">
+              <SalesByDayAnalysis
+                revenueData={salesData?.revenueTrend || []}
+                ordersData={salesData?.ordersTrend || []}
+                currency={salesData?.currency || "AED"}
+              />
             </section>
 
             {/* Hourly Sales Trend is temporarily disabled.
