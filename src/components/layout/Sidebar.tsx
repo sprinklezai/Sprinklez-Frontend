@@ -5,6 +5,7 @@ import {
   DollarSign,
   LogOut,
   MessageSquareText,
+  UsersRound,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -32,6 +33,11 @@ function Sidebar({ brandCode }: SidebarProps) {
       label: "P&L Dashboard",
       icon: DollarSign,
       path: `/brand/${brandCode}/pnl`,
+    },
+    {
+      label: "Staff Scheduling",
+      icon: UsersRound,
+      path: `/brand/${brandCode}/staff-scheduling`,
     },
     {
       label: "Delivery Business",
