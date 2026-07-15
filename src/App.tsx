@@ -10,6 +10,7 @@ import Overview from "./pages/Overview";
 import BrandDashboard from "./pages/BrandDashboard";
 import SalesDashboard from "./pages/SalesDashboard";
 import PnLDashboard from "./pages/PnLDashboard";
+import StaffSchedulingDashboard from "./pages/StaffSchedulingDashboard";
 
 import ProtectedRoute from "./router/ProtectedRoute";
 
@@ -49,6 +50,16 @@ function App() {
           element={
             <ProtectedRoute>
               <PnLDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Staff Scheduling Dashboard */}
+        <Route
+          path="/brand/:brandCode/staff-scheduling"
+          element={
+            <ProtectedRoute>
+              <StaffSchedulingDashboard />
             </ProtectedRoute>
           }
         />
