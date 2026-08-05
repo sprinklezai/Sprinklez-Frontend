@@ -1,7 +1,7 @@
 import { ArrowLeft, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import Sidebar from "../components/layout/Sidebar";
+import Sidebar from "./Sidebar";
 import { useAuth } from "../context/AuthContext";
 
 interface BrandLayoutProps {

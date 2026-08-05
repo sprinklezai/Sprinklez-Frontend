@@ -10,6 +10,7 @@ import Overview from "./pages/Overview";
 import BrandDashboard from "./pages/BrandDashboard";
 import SalesDashboard from "./pages/SalesDashboard";
 import PnLDashboard from "./pages/PnLDashboard";
+import EmployeeAnalysis from "./pages/EmployeeAnalysis";
 import StaffSchedulingDashboard from "./pages/StaffSchedulingDashboard";
 
 import ProtectedRoute from "./router/ProtectedRoute";
@@ -53,6 +54,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Employee Analysis */}
+        <Route
+          path="/employee-analysis"
+          element={
+            <ProtectedRoute>
+              <EmployeeAnalysis />
+            </ProtectedRoute>
+          }
+        />
+
 
         {/* Staff Scheduling Dashboard */}
         <Route
